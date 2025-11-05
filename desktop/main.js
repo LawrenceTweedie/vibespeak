@@ -27,7 +27,9 @@ function createWindow() {
     mainWindow.webContents.openDevTools()
   } else {
     // In production, load built files
-    mainWindow.loadFile(path.join(__dirname, '../client/dist/index.html'))
+    // After electron-builder packing, files are relative to app directory
+    const indexPath = path.join(__dirname, 'client', 'dist', 'index.html')
+    mainWindow.loadFile(indexPath)
   }
 
   // Show window when ready
