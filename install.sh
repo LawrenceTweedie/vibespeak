@@ -156,21 +156,29 @@ apt-get install -y -qq nginx
 # 8. Clone/Setup VibeSpeak
 #############################################
 echo -e "${YELLOW}[8/12] Setting up VibeSpeak...${NC}"
-cd /var/www
 
-# If VibeSpeak already exists, backup and remove
-if [ -d "vibespeak" ]; then
-    mv vibespeak vibespeak.backup.$(date +%Y%m%d_%H%M%S)
+# Check if VibeSpeak directory exists
+if [ ! -d "/var/www/vibespeak" ]; then
+    echo -e "${RED}Error: /var/www/vibespeak directory not found!${NC}"
+    echo -e "${YELLOW}Please ensure project files are in /var/www/vibespeak${NC}"
+    echo ""
+    echo "To clone from repository:"
+    echo "  cd /var/www"
+    echo "  git clone <your-repo-url> vibespeak"
+    echo ""
+    exit 1
 fi
 
-# Clone repository or copy files
-# Note: Replace with your actual repository URL
-# git clone https://github.com/yourusername/vibespeak.git vibespeak
+cd /var/www/vibespeak
 
-# For now, assume files are uploaded manually to /var/www/vibespeak
-# Create directory if it doesn't exist
-mkdir -p vibespeak
-cd vibespeak
+# Verify essential files exist
+if [ ! -f "server/composer.json" ] || [ ! -f "client/package.json" ]; then
+    echo -e "${RED}Error: Project files incomplete!${NC}"
+    echo -e "${YELLOW}Missing server/composer.json or client/package.json${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Project files found in /var/www/vibespeak${NC}"
 
 # Set permissions
 chown -R www-data:www-data /var/www/vibespeak
