@@ -66,14 +66,35 @@
         <p>Demo credentials:</p>
         <p><strong>Username:</strong> demo | <strong>Password:</strong> password</p>
       </div>
+
+      <!-- HTTP Warning -->
+      <div v-if="!isSecure" class="http-warning">
+        <p>⚠️ <strong>Note:</strong> Video/audio requires HTTPS</p>
+        <router-link to="/download" class="download-link">
+          Download Desktop App
+        </router-link>
+      </div>
+
+      <!-- Download Link -->
+      <div class="download-link-section">
+        <router-link to="/download" class="text-download-link">
+          📥 Download Desktop App
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+
+const isSecure = computed(() => {
+  return window.location.protocol === 'https:' ||
+         window.location.hostname === 'localhost' ||
+         window.location.hostname === '127.0.0.1'
+})
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -226,5 +247,56 @@ input:focus {
 
 .demo-info strong {
   color: #fff;
+}
+
+.http-warning {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 152, 0, 0.2);
+  border: 1px solid rgba(255, 152, 0, 0.5);
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.http-warning p {
+  color: #fff;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.download-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 0.4rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.download-link:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.download-link-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.text-download-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+
+.text-download-link:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 </style>

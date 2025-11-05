@@ -13,6 +13,11 @@ class WebRTCService {
 
   async getMediaStream(audio = true, video = true) {
     try {
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('WebRTC is not supported. Please use HTTPS or download the desktop app.')
+      }
+
       const constraints = {
         audio: audio ? {
           echoCancellation: true,
@@ -36,6 +41,11 @@ class WebRTCService {
 
   async getScreenStream() {
     try {
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        throw new Error('Screen sharing is not supported. Please use HTTPS or download the desktop app.')
+      }
+
       this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           cursor: 'always'
