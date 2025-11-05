@@ -43,6 +43,9 @@ function createWindow() {
       protocol: 'file:',
       slashes: true
     }))
+
+    // Open DevTools to debug
+    mainWindow.webContents.openDevTools()
   }
 
   // Show window when ready
