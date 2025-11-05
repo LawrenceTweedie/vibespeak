@@ -114,7 +114,6 @@ apt-get install -y -qq \
     php8.3-xml \
     php8.3-zip \
     php8.3-bcmath \
-    php8.3-json \
     php8.3-opcache
 
 #############################################
