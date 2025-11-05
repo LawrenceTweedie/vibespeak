@@ -22,11 +22,14 @@
     },
     "files": [
       "main.js",
-      "preload.js",
-      "../client/dist/**/*"
+      "preload.js"
     ],
-    "asarUnpack": [
-      "client/dist/**/*"
+    "extraResources": [
+      {
+        "from": "../client/dist",
+        "to": "app/client/dist",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
       "target": "nsis",
