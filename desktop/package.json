@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "VibeSpeak Desktop Application",
   "main": "main.js",
+  "homepage": "https://github.com/vibespeak/vibespeak",
+  "author": {
+    "name": "VibeSpeak Team",
+    "email": "support@vibespeak.com"
+  },
   "scripts": {
     "start": "electron .",
     "build:win": "electron-builder --win",
@@ -34,7 +39,10 @@
         "deb"
       ],
       "icon": "icon.png",
-      "category": "Network"
+      "category": "Network",
+      "maintainer": "VibeSpeak Team <support@vibespeak.com>",
+      "vendor": "VibeSpeak",
+      "synopsis": "Real-time video communication platform"
     }
   },
   "dependencies": {
