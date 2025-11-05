@@ -26,9 +26,13 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3000')
     mainWindow.webContents.openDevTools()
   } else {
-    // In production, load built files
-    // After electron-builder packing, files are relative to app directory
-    const indexPath = path.join(__dirname, 'client', 'dist', 'index.html')
+    // In production, load built files from unpacked directory
+    // electron-builder unpacks files to app.asar.unpacked folder
+    let basePath = __dirname
+    if (basePath.includes('app.asar')) {
+      basePath = basePath.replace('app.asar', 'app.asar.unpacked')
+    }
+    const indexPath = path.join(basePath, 'client', 'dist', 'index.html')
     mainWindow.loadFile(indexPath)
   }
 

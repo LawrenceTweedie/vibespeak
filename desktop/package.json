@@ -25,6 +25,9 @@
       "preload.js",
       "../client/dist/**/*"
     ],
+    "asarUnpack": [
+      "client/dist/**/*"
+    ],
     "win": {
       "target": "nsis",
       "icon": "icon.ico"
