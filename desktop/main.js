@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
+const url = require('url')
 
 let mainWindow
 
@@ -33,7 +34,13 @@ function createWindow() {
       basePath = basePath.replace('app.asar', 'app.asar.unpacked')
     }
     const indexPath = path.join(basePath, 'client', 'dist', 'index.html')
-    mainWindow.loadFile(indexPath)
+
+    // Use loadURL with file:// protocol instead of loadFile
+    mainWindow.loadURL(url.format({
+      pathname: indexPath,
+      protocol: 'file:',
+      slashes: true
+    }))
   }
 
   // Show window when ready
