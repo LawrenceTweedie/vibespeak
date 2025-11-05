@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
 const routes = [
@@ -26,8 +26,11 @@ const routes = [
   }
 ]
 
+// Use hash mode for Electron (file:// protocol), history mode for web
+const isElectron = window.location.protocol === 'file:'
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: isElectron ? createWebHashHistory() : createWebHistory(),
   routes
 })
 
