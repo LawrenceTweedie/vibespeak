@@ -5,6 +5,8 @@ const url = require('url')
 let mainWindow
 
 function createWindow() {
+  const isDev = process.env.NODE_ENV === 'development'
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -14,7 +16,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true
+      webSecurity: isDev // Disable webSecurity in production to allow file:// protocol
     },
     backgroundColor: '#1a1a1a',
     title: 'VibeSpeak',
