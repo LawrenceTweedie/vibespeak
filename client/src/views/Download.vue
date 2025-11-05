@@ -55,9 +55,9 @@
             <h3>Windows</h3>
             <p>Windows 10/11</p>
             <div class="download-options">
-              <a href="/downloads/VibeSpeak-Setup.exe" class="download-btn primary" download>
+              <a href="/downloads/VibeSpeak-Setup.exe" class="download-btn primary">
                 <span class="btn-icon">⬇️</span>
-                Download .exe
+                Download Installer
               </a>
               <span class="file-size">~80 MB</span>
             </div>
@@ -78,11 +78,12 @@
             <h3>macOS</h3>
             <p>macOS 10.13+</p>
             <div class="download-options">
-              <a href="/downloads/VibeSpeak.dmg" class="download-btn primary" download>
+              <a href="/downloads/VibeSpeak.dmg" class="download-btn primary">
                 <span class="btn-icon">⬇️</span>
-                Download .dmg
+                Download Installer
               </a>
               <span class="file-size">~85 MB</span>
+              <p class="build-note">Build on macOS required</p>
             </div>
             <div class="install-steps">
               <p><strong>Installation:</strong></p>
@@ -101,11 +102,12 @@
             <h3>Linux</h3>
             <p>Ubuntu 18.04+, Fedora 32+</p>
             <div class="download-options">
-              <a href="/downloads/VibeSpeak.AppImage" class="download-btn primary" download>
+              <a href="/downloads/VibeSpeak.AppImage" class="download-btn primary">
                 <span class="btn-icon">⬇️</span>
                 Download AppImage
               </a>
-              <a href="/downloads/vibespeak.deb" class="download-btn secondary" download>
+              <a href="/downloads/vibespeak.deb" class="download-btn secondary">
+                <span class="btn-icon">⬇️</span>
                 Download .deb
               </a>
               <span class="file-size">~75 MB</span>
@@ -429,6 +431,13 @@ section h2 {
 .note {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+.build-note {
+  font-size: 0.8rem;
+  color: rgba(255, 152, 0, 0.9);
+  margin-top: 0.5rem;
   font-style: italic;
 }
 </style>
