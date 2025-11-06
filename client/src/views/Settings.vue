@@ -95,6 +95,148 @@
         </button>
       </section>
 
+      <!-- Keyboard Shortcuts -->
+      <section class="settings-section">
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z"/>
+          </svg>
+          Keyboard Shortcuts
+        </h2>
+        <p class="section-description">
+          Configure custom hotkeys for quick actions. Click "Record" and press your desired key combination.
+        </p>
+
+        <div class="hotkey-list">
+          <div class="hotkey-item">
+            <div class="hotkey-info">
+              <span class="hotkey-label">🎤 Toggle Microphone</span>
+              <span class="hotkey-display">{{ settingsStore.getHotkeyDisplay(settingsStore.hotkeys.toggleMicrophone) }}</span>
+            </div>
+            <div class="hotkey-actions">
+              <button
+                @click="startRecording('toggleMicrophone')"
+                class="record-btn"
+                :class="{ recording: recordingAction === 'toggleMicrophone' }"
+              >
+                {{ recordingAction === 'toggleMicrophone' ? '⏺ Recording...' : '⚙️ Record' }}
+              </button>
+              <button
+                v-if="settingsStore.hotkeys.toggleMicrophone"
+                @click="settingsStore.clearHotkey('toggleMicrophone')"
+                class="clear-btn"
+                title="Clear hotkey"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div class="hotkey-item">
+            <div class="hotkey-info">
+              <span class="hotkey-label">📹 Toggle Video</span>
+              <span class="hotkey-display">{{ settingsStore.getHotkeyDisplay(settingsStore.hotkeys.toggleVideo) }}</span>
+            </div>
+            <div class="hotkey-actions">
+              <button
+                @click="startRecording('toggleVideo')"
+                class="record-btn"
+                :class="{ recording: recordingAction === 'toggleVideo' }"
+              >
+                {{ recordingAction === 'toggleVideo' ? '⏺ Recording...' : '⚙️ Record' }}
+              </button>
+              <button
+                v-if="settingsStore.hotkeys.toggleVideo"
+                @click="settingsStore.clearHotkey('toggleVideo')"
+                class="clear-btn"
+                title="Clear hotkey"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div class="hotkey-item">
+            <div class="hotkey-info">
+              <span class="hotkey-label">🖥️ Toggle Screen Share</span>
+              <span class="hotkey-display">{{ settingsStore.getHotkeyDisplay(settingsStore.hotkeys.toggleScreenShare) }}</span>
+            </div>
+            <div class="hotkey-actions">
+              <button
+                @click="startRecording('toggleScreenShare')"
+                class="record-btn"
+                :class="{ recording: recordingAction === 'toggleScreenShare' }"
+              >
+                {{ recordingAction === 'toggleScreenShare' ? '⏺ Recording...' : '⚙️ Record' }}
+              </button>
+              <button
+                v-if="settingsStore.hotkeys.toggleScreenShare"
+                @click="settingsStore.clearHotkey('toggleScreenShare')"
+                class="clear-btn"
+                title="Clear hotkey"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div class="hotkey-item">
+            <div class="hotkey-info">
+              <span class="hotkey-label">🔄 Toggle Audio Mode</span>
+              <span class="hotkey-display">{{ settingsStore.getHotkeyDisplay(settingsStore.hotkeys.toggleAudioMode) }}</span>
+            </div>
+            <div class="hotkey-actions">
+              <button
+                @click="startRecording('toggleAudioMode')"
+                class="record-btn"
+                :class="{ recording: recordingAction === 'toggleAudioMode' }"
+              >
+                {{ recordingAction === 'toggleAudioMode' ? '⏺ Recording...' : '⚙️ Record' }}
+              </button>
+              <button
+                v-if="settingsStore.hotkeys.toggleAudioMode"
+                @click="settingsStore.clearHotkey('toggleAudioMode')"
+                class="clear-btn"
+                title="Clear hotkey"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div class="hotkey-item">
+            <div class="hotkey-info">
+              <span class="hotkey-label">⌨️ Push to Talk</span>
+              <span class="hotkey-display">{{ settingsStore.getHotkeyDisplay(settingsStore.hotkeys.pushToTalk) }}</span>
+            </div>
+            <div class="hotkey-actions">
+              <button
+                @click="startRecording('pushToTalk')"
+                class="record-btn"
+                :class="{ recording: recordingAction === 'pushToTalk' }"
+              >
+                {{ recordingAction === 'pushToTalk' ? '⏺ Recording...' : '⚙️ Record' }}
+              </button>
+              <button
+                v-if="settingsStore.hotkeys.pushToTalk"
+                @click="settingsStore.clearHotkey('pushToTalk')"
+                class="clear-btn"
+                title="Clear hotkey"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="info-note">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+          Press Escape to cancel recording. Hotkeys work only when you're in a room.
+        </p>
+      </section>
+
       <!-- Screen Share Options -->
       <section class="settings-section">
         <h2>
@@ -146,6 +288,7 @@ const soundTesting = ref(false)
 const refreshing = ref(false)
 const audioLevel = ref(0)
 const videoPreview = ref(null)
+const recordingAction = ref(null)
 
 let audioContext = null
 let analyser = null
@@ -161,6 +304,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   stopAudioTest()
   stopVideoTest()
+  stopRecording()
 })
 
 function goBack() {
@@ -337,6 +481,46 @@ async function refreshDevices() {
   } finally {
     refreshing.value = false
   }
+}
+
+// Hotkey recording
+function startRecording(action) {
+  recordingAction.value = action
+  window.addEventListener('keydown', handleHotkeyRecord)
+}
+
+function stopRecording() {
+  recordingAction.value = null
+  window.removeEventListener('keydown', handleHotkeyRecord)
+}
+
+function handleHotkeyRecord(event) {
+  // Cancel on Escape
+  if (event.key === 'Escape') {
+    stopRecording()
+    return
+  }
+
+  // Prevent default behavior
+  event.preventDefault()
+
+  // Ignore modifier keys pressed alone
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) {
+    return
+  }
+
+  // Record the hotkey
+  const hotkeyData = {
+    key: event.key,
+    code: event.code,
+    ctrl: event.ctrlKey || false,
+    shift: event.shiftKey || false,
+    alt: event.altKey || false,
+    meta: event.metaKey || false
+  }
+
+  settingsStore.setHotkey(recordingAction.value, hotkeyData)
+  stopRecording()
 }
 </script>
 
@@ -516,6 +700,105 @@ async function refreshDevices() {
   margin-top: 1rem;
 }
 
+.hotkey-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.hotkey-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #3a3a3a;
+  border-radius: 0.5rem;
+  gap: 1rem;
+}
+
+.hotkey-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.hotkey-label {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.hotkey-display {
+  color: #667eea;
+  font-size: 0.85rem;
+  font-family: monospace;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  width: fit-content;
+}
+
+.hotkey-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.record-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 0.375rem;
+  color: #667eea;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.record-btn:hover {
+  background: rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+}
+
+.record-btn.recording {
+  background: #ff3b30;
+  border-color: #ff3b30;
+  color: white;
+  animation: recording-pulse 1s infinite;
+}
+
+@keyframes recording-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.clear-btn {
+  padding: 0.5rem;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 59, 48, 0.2);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  border-radius: 0.375rem;
+  color: #ff3b30;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.clear-btn:hover {
+  background: rgba(255, 59, 48, 0.3);
+  transform: scale(1.05);
+}
+
 @media (max-width: 768px) {
   .settings-content {
     padding: 1rem;
@@ -523,6 +806,16 @@ async function refreshDevices() {
 
   .settings-section {
     padding: 1rem;
+  }
+
+  .hotkey-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hotkey-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 </style>
