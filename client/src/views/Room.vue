@@ -91,13 +91,49 @@
     </div>
 
     <footer class="room-footer">
-      <MediaControls
-        :media-state="roomStore.mediaState"
-        @toggle-audio="handleToggleAudio"
-        @toggle-video="handleToggleVideo"
-        @toggle-screen="handleToggleScreen"
-        @leave="handleLeave"
-      />
+      <div class="footer-content">
+        <!-- Audio Mode Selector -->
+        <div class="audio-mode-selector">
+          <button @click="showAudioModeMenu = !showAudioModeMenu" class="mode-button" :title="`Current mode: ${getAudioModeLabel(settingsStore.audioInputMode)}`">
+            <span v-if="settingsStore.audioInputMode === 'always'">🎤</span>
+            <span v-else-if="settingsStore.audioInputMode === 'ptt'">⌨️</span>
+            <span v-else-if="settingsStore.audioInputMode === 'vad'">🔊</span>
+            <span class="mode-label">{{ getAudioModeLabel(settingsStore.audioInputMode) }}</span>
+            <span v-if="isVoiceActive && (settingsStore.audioInputMode === 'ptt' || settingsStore.audioInputMode === 'vad')" class="voice-indicator"></span>
+          </button>
+
+          <!-- Mode Menu -->
+          <div v-if="showAudioModeMenu" class="mode-menu">
+            <button
+              v-for="mode in ['always', 'ptt', 'vad']"
+              :key="mode"
+              @click="changeAudioInputMode(mode)"
+              class="mode-option"
+              :class="{ active: settingsStore.audioInputMode === mode }"
+            >
+              <span v-if="mode === 'always'">🎤</span>
+              <span v-else-if="mode === 'ptt'">⌨️</span>
+              <span v-else>🔊</span>
+              <span>{{ getAudioModeLabel(mode) }}</span>
+              <span v-if="mode === 'ptt'" class="hint">Space</span>
+              <span v-if="mode === 'vad'" class="hint">Auto</span>
+            </button>
+          </div>
+        </div>
+
+        <MediaControls
+          :media-state="roomStore.mediaState"
+          @toggle-audio="handleToggleAudio"
+          @toggle-video="handleToggleVideo"
+          @toggle-screen="handleToggleScreen"
+          @leave="handleLeave"
+        />
+
+        <!-- Hotkeys Help -->
+        <div class="hotkeys-hint">
+          <span title="Keyboard Shortcuts">⌨️ Hotkeys: Ctrl+D (Mic) | Ctrl+E (Video) | Ctrl+S (Screen) | M (Mode)</span>
+        </div>
+      </div>
     </footer>
 
     <!-- Error Modal -->
@@ -132,6 +168,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useRoomStore } from '@/stores/room'
+import { useSettingsStore } from '@/stores/settings'
 import VideoGrid from '@/components/VideoGrid.vue'
 import MediaControls from '@/components/MediaControls.vue'
 import SourcePicker from '@/components/SourcePicker.vue'
@@ -156,6 +193,9 @@ const fileInput = ref(null)
 const imageModalUrl = ref(null)
 const showSourcePicker = ref(false)
 const screenSources = ref([])
+const showAudioModeMenu = ref(false)
+const isVoiceActive = ref(false)
+const settingsStore = useSettingsStore()
 
 // Computed
 const participantCountDisplay = computed(() => {
@@ -186,6 +226,19 @@ onMounted(async () => {
 
     // Setup chat message handler
     ws.on('chat', handleChatMessage)
+
+    // Setup keyboard shortcuts
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+
+    // Setup VAD callback
+    webrtc.onVoiceActivityChange = (isActive) => {
+      isVoiceActive.value = isActive
+    }
+
+    // Apply saved audio input mode
+    webrtc.setAudioInputMode(settingsStore.audioInputMode)
+    webrtc.setVADThreshold(settingsStore.vadThreshold)
   } catch (err) {
     console.error('Failed to setup room:', err)
     const errorMessage = err?.message || err?.toString() || 'Failed to join room'
@@ -197,6 +250,10 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(async () => {
+  // Remove keyboard event listeners
+  window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('keyup', handleKeyUp)
+
   if (roomStore.isConnected) {
     await roomStore.leaveRoom(userStore.user.id)
   }
@@ -399,6 +456,86 @@ function formatTime(timestamp) {
 function showImageModal(imageUrl) {
   imageModalUrl.value = imageUrl
 }
+
+// Keyboard shortcuts handler
+function handleKeyDown(event) {
+  // Don't trigger hotkeys when typing in chat
+  if (event.target.tagName === 'TEXTAREA' || event.target.tagName === 'INPUT') {
+    return
+  }
+
+  // Ctrl+D or Cmd+D: Toggle microphone
+  if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+    event.preventDefault()
+    handleToggleAudio()
+    return
+  }
+
+  // Ctrl+E or Cmd+E: Toggle video
+  if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+    event.preventDefault()
+    handleToggleVideo()
+    return
+  }
+
+  // Ctrl+S or Cmd+S: Toggle screen share
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault()
+    handleToggleScreen()
+    return
+  }
+
+  // Space bar: Push-to-talk (only in PTT mode)
+  if (event.code === 'Space' && settingsStore.audioInputMode === 'ptt') {
+    event.preventDefault()
+    if (webrtc.startPushToTalk()) {
+      isVoiceActive.value = true
+    }
+    return
+  }
+
+  // M: Toggle audio mode menu
+  if (event.key === 'm' || event.key === 'M') {
+    event.preventDefault()
+    showAudioModeMenu.value = !showAudioModeMenu.value
+    return
+  }
+}
+
+function handleKeyUp(event) {
+  // Space bar: Release push-to-talk
+  if (event.code === 'Space' && settingsStore.audioInputMode === 'ptt') {
+    event.preventDefault()
+    if (webrtc.stopPushToTalk()) {
+      isVoiceActive.value = false
+    }
+  }
+}
+
+// Audio input mode management
+function changeAudioInputMode(mode) {
+  settingsStore.setAudioInputMode(mode)
+  webrtc.setAudioInputMode(mode)
+  showAudioModeMenu.value = false
+
+  // Update media state based on mode
+  if (mode === 'always') {
+    roomStore.mediaState.audio = true
+  } else if (mode === 'ptt') {
+    roomStore.mediaState.audio = false
+  } else if (mode === 'vad') {
+    roomStore.mediaState.audio = false
+  }
+}
+
+function getAudioModeLabel(mode) {
+  const labels = {
+    'always': 'Always On',
+    'ptt': 'Push to Talk',
+    'vad': 'Voice Activation'
+  }
+  return labels[mode] || mode
+}
 </script>
 
 <style scoped>
@@ -463,6 +600,146 @@ function showImageModal(imageUrl) {
   border-top: 1px solid #444;
   display: flex;
   justify-content: center;
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  gap: 2rem;
+}
+
+.audio-mode-selector {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.mode-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 0.5rem;
+  color: #667eea;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.mode-button:hover {
+  background: rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px);
+}
+
+.mode-label {
+  font-weight: 500;
+}
+
+.voice-indicator {
+  width: 10px;
+  height: 10px;
+  background: #4caf50;
+  border-radius: 50%;
+  animation: pulse 1s infinite;
+  margin-left: 0.25rem;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.mode-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.5rem;
+  background: #2c2c2c;
+  border: 1px solid #444;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.375rem;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.mode-option:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #fff;
+}
+
+.mode-option.active {
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.mode-option .hint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #888;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.hotkeys-hint {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.hotkeys-hint span {
+  cursor: help;
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .audio-mode-selector,
+  .hotkeys-hint {
+    justify-content: center;
+  }
+
+  .hotkeys-hint {
+    font-size: 0.7rem;
+  }
 }
 
 .modal-overlay {

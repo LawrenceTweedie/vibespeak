@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session } = require('electron')
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, Menu } = require('electron')
 const path = require('path')
 const url = require('url')
 
@@ -23,11 +23,14 @@ function createWindow() {
     show: false
   })
 
+  // Remove default menu bar
+  Menu.setApplicationMenu(null)
+
   // Load the app
   if (process.env.NODE_ENV === 'development') {
     // In development, load from Vite dev server
     mainWindow.loadURL('http://localhost:3000')
-    mainWindow.webContents.openDevTools()
+    // Don't auto-open DevTools in development (can still use Ctrl+Shift+I)
   } else {
     // In production, load built files from extraResources
     // Files are in resources/app/client/dist/
@@ -39,9 +42,7 @@ function createWindow() {
       protocol: 'file:',
       slashes: true
     }))
-
-    // Open DevTools to debug
-    mainWindow.webContents.openDevTools()
+    // Don't auto-open DevTools in production (can still use Ctrl+Shift+I)
   }
 
   // Show window when ready

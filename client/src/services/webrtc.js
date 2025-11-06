@@ -9,6 +9,21 @@ class WebRTCService {
         { urls: 'stun:stun1.l.google.com:19302' }
       ]
     }
+
+    // Audio input modes: 'always', 'ptt' (push-to-talk), 'vad' (voice activation)
+    this.audioInputMode = 'always'
+    this.isPushToTalkActive = false
+    this.isVoiceDetected = false
+
+    // VAD (Voice Activity Detection) settings
+    this.audioContext = null
+    this.analyser = null
+    this.vadThreshold = 30 // Voice activity threshold (0-100)
+    this.vadCheckInterval = null
+    this.smoothingFactor = 0.8
+    this.minNoiseLevel = 0
+    this.maxNoiseLevel = 0
+    this.calibrationSamples = 0
   }
 
   async getMediaStream(audio = true, video = true, audioDeviceId = null, videoDeviceId = null) {
@@ -210,7 +225,12 @@ class WebRTCService {
     if (!peer) return
 
     try {
-      await peer.connection.setRemoteDescription(answer)
+      // Only set remote description if we're expecting an answer
+      if (peer.connection.signalingState === 'have-local-offer') {
+        await peer.connection.setRemoteDescription(answer)
+      } else {
+        console.warn(`Peer ${peerId} not in correct state for answer: ${peer.connection.signalingState}`)
+      }
     } catch (error) {
       console.error('Error handling answer:', error)
     }
@@ -293,6 +313,9 @@ class WebRTCService {
   }
 
   cleanup() {
+    // Stop VAD
+    this.stopVAD()
+
     // Stop all tracks
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop())
@@ -311,11 +334,156 @@ class WebRTCService {
     this.peers.clear()
   }
 
+  // Audio input mode management
+  setAudioInputMode(mode) {
+    this.audioInputMode = mode
+
+    if (mode === 'always') {
+      this.stopVAD()
+      this.updateAudioState(true)
+    } else if (mode === 'ptt') {
+      this.stopVAD()
+      this.updateAudioState(false)
+    } else if (mode === 'vad') {
+      this.isPushToTalkActive = false
+      this.startVAD()
+    }
+  }
+
+  getAudioInputMode() {
+    return this.audioInputMode
+  }
+
+  // Push-to-talk controls
+  startPushToTalk() {
+    if (this.audioInputMode === 'ptt') {
+      this.isPushToTalkActive = true
+      this.updateAudioState(true)
+      return true
+    }
+    return false
+  }
+
+  stopPushToTalk() {
+    if (this.audioInputMode === 'ptt') {
+      this.isPushToTalkActive = false
+      this.updateAudioState(false)
+      return true
+    }
+    return false
+  }
+
+  // Voice Activity Detection
+  startVAD() {
+    if (!this.localStream) return
+
+    try {
+      // Create audio context if not exists
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      }
+
+      // Create analyser
+      this.analyser = this.audioContext.createAnalyser()
+      this.analyser.fftSize = 2048
+      this.analyser.smoothingTimeConstant = this.smoothingFactor
+
+      // Connect audio source
+      const source = this.audioContext.createMediaStreamSource(this.localStream)
+      source.connect(this.analyser)
+
+      // Reset calibration
+      this.calibrationSamples = 0
+      this.minNoiseLevel = Infinity
+      this.maxNoiseLevel = 0
+
+      // Start checking for voice activity
+      this.vadCheckInterval = setInterval(() => {
+        this.checkVoiceActivity()
+      }, 100) // Check every 100ms
+    } catch (error) {
+      console.error('Failed to start VAD:', error)
+    }
+  }
+
+  stopVAD() {
+    if (this.vadCheckInterval) {
+      clearInterval(this.vadCheckInterval)
+      this.vadCheckInterval = null
+    }
+
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      this.audioContext.close().catch(err => console.error('Error closing audio context:', err))
+      this.audioContext = null
+    }
+
+    this.analyser = null
+    this.isVoiceDetected = false
+  }
+
+  checkVoiceActivity() {
+    if (!this.analyser) return
+
+    const dataArray = new Uint8Array(this.analyser.frequencyBinCount)
+    this.analyser.getByteFrequencyData(dataArray)
+
+    // Calculate average volume
+    let sum = 0
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i]
+    }
+    const average = sum / dataArray.length
+
+    // Calibration phase (first 20 samples)
+    if (this.calibrationSamples < 20) {
+      this.minNoiseLevel = Math.min(this.minNoiseLevel, average)
+      this.maxNoiseLevel = Math.max(this.maxNoiseLevel, average)
+      this.calibrationSamples++
+      return
+    }
+
+    // Adaptive threshold based on calibration
+    const range = this.maxNoiseLevel - this.minNoiseLevel
+    const adaptiveThreshold = this.minNoiseLevel + (range * this.vadThreshold / 100)
+
+    // Detect voice activity
+    const wasVoiceDetected = this.isVoiceDetected
+    this.isVoiceDetected = average > adaptiveThreshold
+
+    // Update audio state only on changes
+    if (this.isVoiceDetected !== wasVoiceDetected) {
+      this.updateAudioState(this.isVoiceDetected)
+
+      // Callback for UI updates
+      if (this.onVoiceActivityChange) {
+        this.onVoiceActivityChange(this.isVoiceDetected, average, adaptiveThreshold)
+      }
+    }
+  }
+
+  setVADThreshold(threshold) {
+    this.vadThreshold = Math.max(0, Math.min(100, threshold))
+  }
+
+  getVADThreshold() {
+    return this.vadThreshold
+  }
+
+  // Update audio track enabled state
+  updateAudioState(enabled) {
+    if (this.localStream) {
+      this.localStream.getAudioTracks().forEach(track => {
+        track.enabled = enabled
+      })
+    }
+  }
+
   // Callback handlers (to be set by the application)
   onIceCandidate = (peerId, candidate) => {}
   onTrack = (peerId, stream) => {}
   onNegotiationNeeded = (peerId, description) => {}
   onPeerRemoved = (peerId) => {}
+  onVoiceActivityChange = (isActive, level, threshold) => {}
 }
 
 export default new WebRTCService()
