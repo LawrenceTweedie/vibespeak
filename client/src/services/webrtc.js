@@ -41,27 +41,33 @@ class WebRTCService {
     }
   }
 
-  async getScreenStream() {
+  async getDesktopSources() {
+    if (window.electronAPI && window.electronAPI.isElectron) {
+      const sources = await window.electronAPI.getDesktopSources()
+      return sources || []
+    }
+    return []
+  }
+
+  async getScreenStream(sourceId = null) {
     try {
       // Check if running in Electron
       if (window.electronAPI && window.electronAPI.isElectron) {
-        // Use Electron's desktopCapturer
-        const sources = await window.electronAPI.getDesktopSources()
-
-        if (!sources || sources.length === 0) {
-          throw new Error('No screen sources available')
+        if (!sourceId) {
+          throw new Error('Source ID is required for Electron')
         }
 
-        // Use the first source (primary screen)
-        // In the future, we can show a picker UI
-        const source = sources[0]
-
+        // Use Electron's desktopCapturer with selected source
         this.screenStream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: {
             mandatory: {
               chromeMediaSource: 'desktop',
-              chromeMediaSourceId: source.id
+              chromeMediaSourceId: sourceId,
+              minWidth: 1280,
+              maxWidth: 1920,
+              minHeight: 720,
+              maxHeight: 1080
             }
           }
         })
@@ -73,15 +79,18 @@ class WebRTCService {
 
         this.screenStream = await navigator.mediaDevices.getDisplayMedia({
           video: {
-            cursor: 'always'
+            cursor: 'always',
+            displaySurface: 'monitor'
           },
           audio: false
         })
       }
 
       // Handle when user stops sharing via browser UI
-      this.screenStream.getVideoTracks()[0].onended = () => {
-        this.stopScreenShare()
+      if (this.screenStream && this.screenStream.getVideoTracks()[0]) {
+        this.screenStream.getVideoTracks()[0].onended = () => {
+          this.stopScreenShare()
+        }
       }
 
       return this.screenStream
@@ -234,9 +243,9 @@ class WebRTCService {
     }
   }
 
-  async startScreenShare() {
+  async startScreenShare(sourceId = null) {
     try {
-      this.screenStream = await this.getScreenStream()
+      this.screenStream = await this.getScreenStream(sourceId)
 
       // Replace video track in all peer connections
       const screenTrack = this.screenStream.getVideoTracks()[0]

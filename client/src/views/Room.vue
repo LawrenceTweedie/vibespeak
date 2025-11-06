@@ -114,6 +114,14 @@
         <img :src="imageModalUrl" alt="Full size image" />
       </div>
     </div>
+
+    <!-- Source Picker Modal -->
+    <SourcePicker
+      :show="showSourcePicker"
+      :sources="screenSources"
+      @select="handleSourceSelect"
+      @cancel="showSourcePicker = false"
+    />
   </div>
 </template>
 
@@ -124,7 +132,9 @@ import { useUserStore } from '@/stores/user'
 import { useRoomStore } from '@/stores/room'
 import VideoGrid from '@/components/VideoGrid.vue'
 import MediaControls from '@/components/MediaControls.vue'
+import SourcePicker from '@/components/SourcePicker.vue'
 import ws from '@/services/websocket'
+import webrtc from '@/services/webrtc'
 
 const route = useRoute()
 const router = useRouter()
@@ -142,6 +152,8 @@ const messagesContainer = ref(null)
 const messageInput = ref(null)
 const fileInput = ref(null)
 const imageModalUrl = ref(null)
+const showSourcePicker = ref(false)
+const screenSources = ref([])
 
 // Computed
 const participantCountDisplay = computed(() => {
@@ -206,9 +218,35 @@ async function handleToggleVideo() {
 
 async function handleToggleScreen() {
   try {
-    await roomStore.toggleScreenShare()
+    // If turning off, just toggle off
+    if (roomStore.mediaState.screen) {
+      await roomStore.toggleScreenShare()
+      return
+    }
+
+    // If turning on, show source picker in Electron
+    if (window.electronAPI && window.electronAPI.isElectron) {
+      screenSources.value = await webrtc.getDesktopSources()
+      if (screenSources.value.length === 0) {
+        error.value = 'No screen sources available'
+        return
+      }
+      showSourcePicker.value = true
+    } else {
+      // Browser: use native picker
+      await roomStore.toggleScreenShare()
+    }
   } catch (err) {
     error.value = 'Failed to toggle screen share: ' + err.message
+  }
+}
+
+async function handleSourceSelect(source) {
+  showSourcePicker.value = false
+  try {
+    await roomStore.toggleScreenShare(source.id)
+  } catch (err) {
+    error.value = 'Failed to start screen share: ' + err.message
   }
 }
 

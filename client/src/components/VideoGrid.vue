@@ -9,6 +9,11 @@
         playsinline
       ></video>
       <div class="video-label">You</div>
+      <button @click="toggleFullscreen(localVideo)" class="fullscreen-btn" title="Fullscreen">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M3 3h5v2H5v3H3V3zm0 9h2v3h3v2H3v-5zm14 0v5h-5v-2h3v-3h2zM14 3v2h-3v3h-2V3h5z"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Remote videos -->
@@ -16,6 +21,7 @@
       v-for="[peerId, stream] in remoteStreams"
       :key="peerId"
       class="video-container"
+      :class="{ 'screen-share': isScreenShare(peerId) }"
     >
       <video
         :ref="el => setRemoteVideo(peerId, el)"
@@ -23,6 +29,11 @@
         playsinline
       ></video>
       <div class="video-label">{{ getParticipantName(peerId) }}</div>
+      <button @click="toggleFullscreen(remoteVideos.get(peerId))" class="fullscreen-btn" title="Fullscreen">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M3 3h5v2H5v3H3V3zm0 9h2v3h3v2H3v-5zm14 0v5h-5v-2h3v-3h2zM14 3v2h-3v3h-2V3h5z"/>
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -61,6 +72,23 @@ function setRemoteVideo(peerId, el) {
 function getParticipantName(peerId) {
   const participant = props.participants.find(p => p.peerId === peerId)
   return participant?.userId || peerId
+}
+
+function isScreenShare(peerId) {
+  const participant = props.participants.find(p => p.peerId === peerId)
+  return participant?.screen || false
+}
+
+function toggleFullscreen(videoEl) {
+  if (!videoEl) return
+
+  if (!document.fullscreenElement) {
+    videoEl.requestFullscreen().catch(err => {
+      console.error('Error attempting to enable fullscreen:', err)
+    })
+  } else {
+    document.exitFullscreen()
+  }
 }
 
 watch(() => props.localStream, (newStream) => {
@@ -108,6 +136,11 @@ onMounted(() => {
   border: 2px solid #667eea;
 }
 
+.video-container.screen-share {
+  grid-column: 1 / -1;
+  border: 2px solid #34c759;
+}
+
 video {
   width: 100%;
   height: 100%;
@@ -124,6 +157,31 @@ video {
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
+  z-index: 2;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.video-container:hover .fullscreen-btn {
+  opacity: 1;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(102, 126, 234, 0.8);
+  transform: scale(1.1);
 }
 
 /* Responsive layouts */

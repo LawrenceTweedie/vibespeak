@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import api from '@/services/api'
 import ws from '@/services/websocket'
 import webrtc from '@/services/webrtc'
+import sounds from '@/services/sounds'
 import { useSettingsStore } from './settings'
 
 export const useRoomStore = defineStore('room', () => {
@@ -82,6 +83,9 @@ export const useRoomStore = defineStore('room', () => {
 
       isConnected.value = true
 
+      // Play join sound
+      sounds.playJoinRoom()
+
       return response.data
     } catch (error) {
       console.error('Failed to join room:', error)
@@ -91,6 +95,9 @@ export const useRoomStore = defineStore('room', () => {
 
   async function leaveRoom(userId) {
     try {
+      // Play leave sound before leaving
+      sounds.playLeaveRoom()
+
       if (currentRoom.value) {
         await api.leaveRoom(currentRoom.value.id, userId)
       }
@@ -158,6 +165,9 @@ export const useRoomStore = defineStore('room', () => {
         screen: data.screen
       })
 
+      // Play user joined sound
+      sounds.playUserJoined()
+
       // Wait a bit for the peer to be ready
       setTimeout(async () => {
         await webrtc.createPeerConnection(data.peerId, false)
@@ -169,6 +179,9 @@ export const useRoomStore = defineStore('room', () => {
       participants.value = participants.value.filter(p => p.peerId !== data.peerId)
       remoteStreams.value.delete(data.peerId)
       webrtc.removePeer(data.peerId)
+
+      // Play user left sound
+      sounds.playUserLeft()
     })
 
     // WebRTC signaling
@@ -207,6 +220,13 @@ export const useRoomStore = defineStore('room', () => {
     webrtc.toggleAudio(mediaState.value.audio)
     ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
 
+    // Play sound
+    if (mediaState.value.audio) {
+      sounds.playMicOn()
+    } else {
+      sounds.playMicOff()
+    }
+
     if (currentRoom.value && currentUserId.value) {
       await api.updateMediaState(currentRoom.value.id, currentUserId.value, {
         audio_enabled: mediaState.value.audio
@@ -232,6 +252,13 @@ export const useRoomStore = defineStore('room', () => {
       webrtc.toggleVideo(mediaState.value.video)
       ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
 
+      // Play sound
+      if (mediaState.value.video) {
+        sounds.playVideoOn()
+      } else {
+        sounds.playVideoOff()
+      }
+
       if (currentRoom.value && currentUserId.value) {
         await api.updateMediaState(currentRoom.value.id, currentUserId.value, {
           video_enabled: mediaState.value.video
@@ -244,14 +271,16 @@ export const useRoomStore = defineStore('room', () => {
     }
   }
 
-  async function toggleScreenShare() {
+  async function toggleScreenShare(sourceId = null) {
     try {
       mediaState.value.screen = !mediaState.value.screen
 
       if (mediaState.value.screen) {
-        await webrtc.startScreenShare()
+        await webrtc.startScreenShare(sourceId)
+        sounds.playScreenOn()
       } else {
         webrtc.stopScreenShare()
+        sounds.playScreenOff()
       }
 
       ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
