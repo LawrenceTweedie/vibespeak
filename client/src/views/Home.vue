@@ -34,13 +34,18 @@
               class="room-item"
               @click="handleJoinRoom(room)"
             >
-              <div class="room-info">
+              <div class="room-header">
                 <h4>{{ room.name }}</h4>
-                <p>{{ room.description }}</p>
-                <span class="room-code">Code: {{ room.room_code }}</span>
+                <span class="participant-count">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                  </svg>
+                  {{ room.participant_count || 0 }}/{{ room.max_participants }}
+                </span>
               </div>
-              <div class="room-meta">
-                <span>{{ room.participant_count || 0 }} / {{ room.max_participants }}</span>
+              <p v-if="room.description" class="room-description">{{ room.description }}</p>
+              <div v-if="isUserInRoom(room)" class="room-code">
+                Code: {{ room.room_code }}
               </div>
             </div>
           </div>
@@ -111,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useRoomStore } from '@/stores/room'
@@ -124,6 +129,7 @@ const roomStore = useRoomStore()
 const loading = ref(false)
 const rooms = ref([])
 const showCreateModal = ref(false)
+let refreshInterval = null
 
 const createForm = ref({
   name: '',
@@ -135,6 +141,14 @@ const createForm = ref({
 
 onMounted(async () => {
   await loadRooms()
+  // Refresh rooms every 5 seconds
+  refreshInterval = setInterval(loadRooms, 5000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
 })
 
 async function loadRooms() {
@@ -187,6 +201,17 @@ function goToSettings() {
 function handleLogout() {
   userStore.logout()
   router.push('/')
+}
+
+function isUserInRoom(room) {
+  // Check if user is owner or participant
+  if (room.owner_id === userStore.user?.id) {
+    return true
+  }
+  if (room.participants && room.participants.some(p => p.id === userStore.user?.id)) {
+    return true
+  }
+  return false
 }
 </script>
 
@@ -284,42 +309,70 @@ function handleLogout() {
 .rooms-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .room-item {
   background: #1a1a1a;
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
+  border-left: 3px solid transparent;
 }
 
 .room-item:hover {
   background: #252525;
-  transform: translateX(4px);
+  border-left-color: #667eea;
 }
 
-.room-info h4 {
-  margin-bottom: 0.3rem;
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.room-info p {
-  font-size: 0.85rem;
+.room-header h4 {
+  font-size: 0.95rem;
+  margin: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-count {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
   color: #999;
-  margin-bottom: 0.5rem;
+  white-space: nowrap;
+}
+
+.participant-count svg {
+  opacity: 0.7;
+}
+
+.room-description {
+  font-size: 0.8rem;
+  color: #999;
+  margin: 0.25rem 0 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .room-code {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #667eea;
   font-weight: 500;
-}
-
-.room-meta {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: #999;
+  margin-top: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 0.25rem;
+  display: inline-block;
 }
 
 .main-content {

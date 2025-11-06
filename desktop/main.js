@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, desktopCapturer, session } = require('electron')
 const path = require('path')
 const url = require('url')
 
@@ -53,6 +53,16 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+
+  // Enable screen sharing
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'media') {
+      // Approve media permissions
+      callback(true)
+    } else {
+      callback(false)
+    }
+  })
 }
 
 // App lifecycle
@@ -96,5 +106,18 @@ ipcMain.handle('maximize-window', () => {
 ipcMain.handle('close-window', () => {
   if (mainWindow) {
     mainWindow.close()
+  }
+})
+
+ipcMain.handle('get-desktop-sources', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['window', 'screen'],
+      thumbnailSize: { width: 150, height: 150 }
+    })
+    return sources
+  } catch (error) {
+    console.error('Error getting desktop sources:', error)
+    return []
   }
 })

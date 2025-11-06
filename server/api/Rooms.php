@@ -112,6 +112,8 @@ class Rooms
         foreach ($rooms as &$room) {
             unset($room['password_hash']);
             $room['participant_count'] = $this->getParticipantCount($room['id']);
+            // Include participants list to check if user is in room
+            $room['participants'] = $this->getParticipants($room['id']);
         }
 
         return $rooms;

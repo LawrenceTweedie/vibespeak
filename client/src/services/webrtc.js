@@ -43,17 +43,41 @@ class WebRTCService {
 
   async getScreenStream() {
     try {
-      // Check if mediaDevices is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        throw new Error('Screen sharing is not supported. Please use HTTPS or download the desktop app.')
-      }
+      // Check if running in Electron
+      if (window.electronAPI && window.electronAPI.isElectron) {
+        // Use Electron's desktopCapturer
+        const sources = await window.electronAPI.getDesktopSources()
 
-      this.screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          cursor: 'always'
-        },
-        audio: false
-      })
+        if (!sources || sources.length === 0) {
+          throw new Error('No screen sources available')
+        }
+
+        // Use the first source (primary screen)
+        // In the future, we can show a picker UI
+        const source = sources[0]
+
+        this.screenStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: source.id
+            }
+          }
+        })
+      } else {
+        // Use standard browser API
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+          throw new Error('Screen sharing is not supported. Please use HTTPS or download the desktop app.')
+        }
+
+        this.screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            cursor: 'always'
+          },
+          audio: false
+        })
+      }
 
       // Handle when user stops sharing via browser UI
       this.screenStream.getVideoTracks()[0].onended = () => {

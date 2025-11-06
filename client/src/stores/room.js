@@ -17,6 +17,7 @@ export const useRoomStore = defineStore('room', () => {
     screen: false
   })
   const peerId = ref(null)
+  const currentUserId = ref(null)
   const isConnected = ref(false)
 
   const participantCount = computed(() => participants.value.length)
@@ -36,6 +37,9 @@ export const useRoomStore = defineStore('room', () => {
 
   async function joinRoom(roomId, userId, password = null) {
     try {
+      // Store user ID for later use
+      currentUserId.value = userId
+
       // Join room via API
       const response = await api.joinRoom(roomId, userId, password)
       if (!response.success) {
@@ -105,6 +109,7 @@ export const useRoomStore = defineStore('room', () => {
       participants.value = []
       remoteStreams.value.clear()
       isConnected.value = false
+      currentUserId.value = null
     } catch (error) {
       console.error('Failed to leave room:', error)
       throw error
@@ -202,8 +207,8 @@ export const useRoomStore = defineStore('room', () => {
     webrtc.toggleAudio(mediaState.value.audio)
     ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
 
-    if (currentRoom.value) {
-      await api.updateMediaState(currentRoom.value.id, peerId.value, {
+    if (currentRoom.value && currentUserId.value) {
+      await api.updateMediaState(currentRoom.value.id, currentUserId.value, {
         audio_enabled: mediaState.value.audio
       })
     }
@@ -227,8 +232,8 @@ export const useRoomStore = defineStore('room', () => {
       webrtc.toggleVideo(mediaState.value.video)
       ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
 
-      if (currentRoom.value) {
-        await api.updateMediaState(currentRoom.value.id, peerId.value, {
+      if (currentRoom.value && currentUserId.value) {
+        await api.updateMediaState(currentRoom.value.id, currentUserId.value, {
           video_enabled: mediaState.value.video
         })
       }
@@ -251,8 +256,8 @@ export const useRoomStore = defineStore('room', () => {
 
       ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
 
-      if (currentRoom.value) {
-        await api.updateMediaState(currentRoom.value.id, peerId.value, {
+      if (currentRoom.value && currentUserId.value) {
+        await api.updateMediaState(currentRoom.value.id, currentUserId.value, {
           screen_sharing: mediaState.value.screen
         })
       }
@@ -270,6 +275,7 @@ export const useRoomStore = defineStore('room', () => {
     localStream,
     mediaState,
     peerId,
+    currentUserId,
     isConnected,
     participantCount,
     createRoom,
