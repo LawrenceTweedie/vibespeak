@@ -42,11 +42,19 @@ export const useRoomStore = defineStore('room', () => {
 
       currentRoom.value = response.data
 
-      // Get media stream
-      localStream.value = await webrtc.getMediaStream(
-        mediaState.value.audio,
-        mediaState.value.video
-      )
+      // Try to get media stream, but don't fail if unavailable
+      try {
+        localStream.value = await webrtc.getMediaStream(
+          mediaState.value.audio,
+          mediaState.value.video
+        )
+      } catch (mediaError) {
+        console.warn('Failed to get media stream, continuing without media:', mediaError)
+        // Continue without media - text chat will still work
+        localStream.value = null
+        mediaState.value.audio = false
+        mediaState.value.video = false
+      }
 
       // Connect to WebSocket
       const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8080'
@@ -198,21 +206,27 @@ export const useRoomStore = defineStore('room', () => {
   }
 
   async function toggleVideo() {
-    if (!mediaState.value.video) {
-      // Enable video
-      if (!localStream.value || !localStream.value.getVideoTracks().length) {
-        localStream.value = await webrtc.getMediaStream(mediaState.value.audio, true)
+    try {
+      if (!mediaState.value.video) {
+        // Enable video
+        if (!localStream.value || !localStream.value.getVideoTracks().length) {
+          localStream.value = await webrtc.getMediaStream(mediaState.value.audio, true)
+        }
       }
-    }
 
-    mediaState.value.video = !mediaState.value.video
-    webrtc.toggleVideo(mediaState.value.video)
-    ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
+      mediaState.value.video = !mediaState.value.video
+      webrtc.toggleVideo(mediaState.value.video)
+      ws.updateMediaState(mediaState.value.audio, mediaState.value.video, mediaState.value.screen)
 
-    if (currentRoom.value) {
-      await api.updateMediaState(currentRoom.value.id, peerId.value, {
-        video_enabled: mediaState.value.video
-      })
+      if (currentRoom.value) {
+        await api.updateMediaState(currentRoom.value.id, peerId.value, {
+          video_enabled: mediaState.value.video
+        })
+      }
+    } catch (error) {
+      console.warn('Failed to toggle video:', error)
+      mediaState.value.video = false
+      throw error
     }
   }
 
