@@ -113,9 +113,15 @@ ipcMain.handle('get-desktop-sources', async () => {
   try {
     const sources = await desktopCapturer.getSources({
       types: ['window', 'screen'],
-      thumbnailSize: { width: 150, height: 150 }
+      thumbnailSize: { width: 300, height: 200 }
     })
-    return sources
+
+    // Convert thumbnails to data URLs for display in renderer
+    return sources.map(source => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL()
+    }))
   } catch (error) {
     console.error('Error getting desktop sources:', error)
     return []
