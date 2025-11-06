@@ -1,14 +1,18 @@
 <template>
   <div class="video-grid">
     <!-- Local video -->
-    <div class="video-container local" v-if="localStream">
+    <div
+      class="video-container local"
+      v-if="localStream || screenStream"
+      :class="{ 'screen-share': mediaState?.screen }"
+    >
       <video
         ref="localVideo"
         autoplay
         muted
         playsinline
       ></video>
-      <div class="video-label">You</div>
+      <div class="video-label">You{{ mediaState?.screen ? ' (Screen)' : '' }}</div>
       <button @click="toggleFullscreen(localVideo)" class="fullscreen-btn" title="Fullscreen">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
           <path d="M3 3h5v2H5v3H3V3zm0 9h2v3h3v2H3v-5zm14 0v5h-5v-2h3v-3h2zM14 3v2h-3v3h-2V3h5z"/>
@@ -46,6 +50,10 @@ const props = defineProps({
     type: MediaStream,
     default: null
   },
+  screenStream: {
+    type: MediaStream,
+    default: null
+  },
   remoteStreams: {
     type: Map,
     required: true
@@ -53,6 +61,10 @@ const props = defineProps({
   participants: {
     type: Array,
     default: () => []
+  },
+  mediaState: {
+    type: Object,
+    default: () => ({ screen: false })
   }
 })
 
@@ -91,8 +103,21 @@ function toggleFullscreen(videoEl) {
   }
 }
 
+// Watch for screen stream changes (higher priority)
+watch(() => props.screenStream, (newStream) => {
+  if (localVideo.value) {
+    if (newStream) {
+      localVideo.value.srcObject = newStream
+    } else if (props.localStream) {
+      // Switch back to camera when screen sharing stops
+      localVideo.value.srcObject = props.localStream
+    }
+  }
+}, { immediate: true })
+
+// Watch for local stream changes
 watch(() => props.localStream, (newStream) => {
-  if (localVideo.value && newStream) {
+  if (localVideo.value && newStream && !props.screenStream) {
     localVideo.value.srcObject = newStream
   }
 }, { immediate: true })
@@ -108,8 +133,13 @@ watch(() => props.remoteStreams, async (newStreams) => {
 }, { deep: true })
 
 onMounted(() => {
-  if (localVideo.value && props.localStream) {
-    localVideo.value.srcObject = props.localStream
+  if (localVideo.value) {
+    // Prioritize screen stream over local stream
+    if (props.screenStream) {
+      localVideo.value.srcObject = props.screenStream
+    } else if (props.localStream) {
+      localVideo.value.srcObject = props.localStream
+    }
   }
 })
 </script>

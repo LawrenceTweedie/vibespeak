@@ -12,6 +12,7 @@ export const useRoomStore = defineStore('room', () => {
   const participants = ref([])
   const remoteStreams = ref(new Map())
   const localStream = ref(null)
+  const screenStream = ref(null)
   const mediaState = ref({
     audio: true,
     video: false,
@@ -115,6 +116,7 @@ export const useRoomStore = defineStore('room', () => {
       currentRoom.value = null
       participants.value = []
       remoteStreams.value.clear()
+      screenStream.value = null
       isConnected.value = false
       currentUserId.value = null
     } catch (error) {
@@ -277,9 +279,11 @@ export const useRoomStore = defineStore('room', () => {
 
       if (mediaState.value.screen) {
         await webrtc.startScreenShare(sourceId)
+        screenStream.value = webrtc.screenStream
         sounds.playScreenOn()
       } else {
         webrtc.stopScreenShare()
+        screenStream.value = null
         sounds.playScreenOff()
       }
 
@@ -293,6 +297,7 @@ export const useRoomStore = defineStore('room', () => {
     } catch (error) {
       console.error('Failed to toggle screen share:', error)
       mediaState.value.screen = false
+      screenStream.value = null
       throw error
     }
   }
@@ -302,6 +307,7 @@ export const useRoomStore = defineStore('room', () => {
     participants,
     remoteStreams,
     localStream,
+    screenStream,
     mediaState,
     peerId,
     currentUserId,

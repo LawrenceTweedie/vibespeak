@@ -22,8 +22,10 @@
     <div class="room-content">
       <VideoGrid
         :local-stream="roomStore.localStream"
+        :screen-stream="roomStore.screenStream"
         :remote-streams="roomStore.remoteStreams"
         :participants="roomStore.participants"
+        :media-state="roomStore.mediaState"
         :class="{ 'with-chat': showChat }"
       />
 
