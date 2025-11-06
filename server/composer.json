@@ -9,7 +9,8 @@
     },
     "autoload": {
         "psr-4": {
-            "VibeSpeak\\": "api/"
+            "VibeSpeak\\": "api/",
+            "VibeSpeak\\WebSocket\\": "websocket/"
         }
     }
 }
