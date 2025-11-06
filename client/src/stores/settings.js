@@ -11,6 +11,15 @@ export const useSettingsStore = defineStore('settings', () => {
   const audioInputMode = ref('always')
   const vadThreshold = ref(30) // Voice activation threshold (0-100)
 
+  // Hotkeys - stored as objects with key, code, ctrl, shift, alt, meta
+  const hotkeys = ref({
+    toggleMicrophone: null,
+    toggleVideo: null,
+    toggleScreenShare: null,
+    toggleAudioMode: null,
+    pushToTalk: null
+  })
+
   // Available devices
   const audioInputDevices = ref([])
   const videoInputDevices = ref([])
@@ -27,6 +36,9 @@ export const useSettingsStore = defineStore('settings', () => {
         selectedAudioOutput.value = settings.audioOutput || null
         audioInputMode.value = settings.audioInputMode || 'always'
         vadThreshold.value = settings.vadThreshold || 30
+        if (settings.hotkeys) {
+          hotkeys.value = { ...hotkeys.value, ...settings.hotkeys }
+        }
       } catch (error) {
         console.error('Failed to load settings:', error)
       }
@@ -40,7 +52,8 @@ export const useSettingsStore = defineStore('settings', () => {
       videoInput: selectedVideoInput.value,
       audioOutput: selectedAudioOutput.value,
       audioInputMode: audioInputMode.value,
-      vadThreshold: vadThreshold.value
+      vadThreshold: vadThreshold.value,
+      hotkeys: hotkeys.value
     }
     localStorage.setItem('vibespeak_settings', JSON.stringify(settings))
   }
@@ -104,6 +117,52 @@ export const useSettingsStore = defineStore('settings', () => {
     saveSettings()
   }
 
+  // Set hotkey
+  function setHotkey(action, hotkeyData) {
+    if (hotkeys.value.hasOwnProperty(action)) {
+      hotkeys.value[action] = hotkeyData
+      saveSettings()
+    }
+  }
+
+  // Clear hotkey
+  function clearHotkey(action) {
+    if (hotkeys.value.hasOwnProperty(action)) {
+      hotkeys.value[action] = null
+      saveSettings()
+    }
+  }
+
+  // Check if hotkey matches event
+  function hotkeyMatches(hotkeyData, event) {
+    if (!hotkeyData) return false
+
+    return (
+      hotkeyData.code === event.code &&
+      hotkeyData.ctrl === (event.ctrlKey || false) &&
+      hotkeyData.shift === (event.shiftKey || false) &&
+      hotkeyData.alt === (event.altKey || false) &&
+      hotkeyData.meta === (event.metaKey || false)
+    )
+  }
+
+  // Get hotkey display string
+  function getHotkeyDisplay(hotkeyData) {
+    if (!hotkeyData) return 'Not set'
+
+    const parts = []
+    if (hotkeyData.ctrl) parts.push('Ctrl')
+    if (hotkeyData.shift) parts.push('Shift')
+    if (hotkeyData.alt) parts.push('Alt')
+    if (hotkeyData.meta) parts.push('Cmd')
+
+    // Use key for display if available, otherwise code
+    const keyDisplay = hotkeyData.key || hotkeyData.code
+    parts.push(keyDisplay)
+
+    return parts.join('+')
+  }
+
   // Request permissions to get device labels
   async function requestPermissions() {
     try {
@@ -128,6 +187,7 @@ export const useSettingsStore = defineStore('settings', () => {
     selectedAudioOutput,
     audioInputMode,
     vadThreshold,
+    hotkeys,
     audioInputDevices,
     videoInputDevices,
     audioOutputDevices,
@@ -139,6 +199,10 @@ export const useSettingsStore = defineStore('settings', () => {
     setAudioOutput,
     setAudioInputMode,
     setVADThreshold,
+    setHotkey,
+    clearHotkey,
+    hotkeyMatches,
+    getHotkeyDisplay,
     requestPermissions
   }
 })

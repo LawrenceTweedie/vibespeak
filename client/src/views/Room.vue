@@ -131,7 +131,9 @@
 
         <!-- Hotkeys Help -->
         <div class="hotkeys-hint">
-          <span title="Keyboard Shortcuts">⌨️ Hotkeys: Ctrl+D (Mic) | Ctrl+E (Video) | Ctrl+S (Screen) | M (Mode)</span>
+          <router-link to="/settings" class="settings-link" title="Configure keyboard shortcuts">
+            ⚙️ Configure Hotkeys
+          </router-link>
         </div>
       </div>
     </footer>
@@ -464,47 +466,49 @@ function handleKeyDown(event) {
     return
   }
 
-  // Ctrl+D or Cmd+D: Toggle microphone
-  if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+  // Check toggle microphone hotkey
+  if (settingsStore.hotkeyMatches(settingsStore.hotkeys.toggleMicrophone, event)) {
     event.preventDefault()
     handleToggleAudio()
     return
   }
 
-  // Ctrl+E or Cmd+E: Toggle video
-  if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+  // Check toggle video hotkey
+  if (settingsStore.hotkeyMatches(settingsStore.hotkeys.toggleVideo, event)) {
     event.preventDefault()
     handleToggleVideo()
     return
   }
 
-  // Ctrl+S or Cmd+S: Toggle screen share
-  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+  // Check toggle screen share hotkey
+  if (settingsStore.hotkeyMatches(settingsStore.hotkeys.toggleScreenShare, event)) {
     event.preventDefault()
     handleToggleScreen()
     return
   }
 
-  // Space bar: Push-to-talk (only in PTT mode)
-  if (event.code === 'Space' && settingsStore.audioInputMode === 'ptt') {
+  // Check toggle audio mode hotkey
+  if (settingsStore.hotkeyMatches(settingsStore.hotkeys.toggleAudioMode, event)) {
+    event.preventDefault()
+    showAudioModeMenu.value = !showAudioModeMenu.value
+    return
+  }
+
+  // Check push-to-talk hotkey (only in PTT mode)
+  if (settingsStore.audioInputMode === 'ptt' &&
+      settingsStore.hotkeyMatches(settingsStore.hotkeys.pushToTalk, event)) {
     event.preventDefault()
     if (webrtc.startPushToTalk()) {
       isVoiceActive.value = true
     }
     return
   }
-
-  // M: Toggle audio mode menu
-  if (event.key === 'm' || event.key === 'M') {
-    event.preventDefault()
-    showAudioModeMenu.value = !showAudioModeMenu.value
-    return
-  }
 }
 
 function handleKeyUp(event) {
-  // Space bar: Release push-to-talk
-  if (event.code === 'Space' && settingsStore.audioInputMode === 'ptt') {
+  // Release push-to-talk
+  if (settingsStore.audioInputMode === 'ptt' &&
+      settingsStore.hotkeyMatches(settingsStore.hotkeys.pushToTalk, event)) {
     event.preventDefault()
     if (webrtc.stopPushToTalk()) {
       isVoiceActive.value = false
@@ -722,8 +726,17 @@ function getAudioModeLabel(mode) {
   font-size: 0.8rem;
 }
 
-.hotkeys-hint span {
-  cursor: help;
+.settings-link {
+  color: #667eea;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.settings-link:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #fff;
 }
 
 @media (max-width: 768px) {
