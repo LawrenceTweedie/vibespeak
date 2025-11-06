@@ -11,7 +11,7 @@ class WebRTCService {
     }
   }
 
-  async getMediaStream(audio = true, video = true) {
+  async getMediaStream(audio = true, video = true, audioDeviceId = null, videoDeviceId = null) {
     try {
       // Check if mediaDevices is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -20,11 +20,13 @@ class WebRTCService {
 
       const constraints = {
         audio: audio ? {
+          deviceId: audioDeviceId ? { exact: audioDeviceId } : undefined,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         } : false,
         video: video ? {
+          deviceId: videoDeviceId ? { exact: videoDeviceId } : undefined,
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: 30 }

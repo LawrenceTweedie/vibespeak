@@ -3,8 +3,10 @@ import { ref, computed } from 'vue'
 import api from '@/services/api'
 import ws from '@/services/websocket'
 import webrtc from '@/services/webrtc'
+import { useSettingsStore } from './settings'
 
 export const useRoomStore = defineStore('room', () => {
+  const settingsStore = useSettingsStore()
   const currentRoom = ref(null)
   const participants = ref([])
   const remoteStreams = ref(new Map())
@@ -46,7 +48,9 @@ export const useRoomStore = defineStore('room', () => {
       try {
         localStream.value = await webrtc.getMediaStream(
           mediaState.value.audio,
-          mediaState.value.video
+          mediaState.value.video,
+          settingsStore.selectedAudioInput,
+          settingsStore.selectedVideoInput
         )
       } catch (mediaError) {
         console.warn('Failed to get media stream, continuing without media:', mediaError)
@@ -210,7 +214,12 @@ export const useRoomStore = defineStore('room', () => {
       if (!mediaState.value.video) {
         // Enable video
         if (!localStream.value || !localStream.value.getVideoTracks().length) {
-          localStream.value = await webrtc.getMediaStream(mediaState.value.audio, true)
+          localStream.value = await webrtc.getMediaStream(
+            mediaState.value.audio,
+            true,
+            settingsStore.selectedAudioInput,
+            settingsStore.selectedVideoInput
+          )
         }
       }
 

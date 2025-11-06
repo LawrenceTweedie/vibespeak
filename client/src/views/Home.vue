@@ -3,6 +3,13 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>VibeSpeak</h2>
+        <div class="user-actions">
+          <button @click="goToSettings" class="settings-btn" title="Settings">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+        </div>
         <div class="user-info">
           <span>{{ userStore.user?.display_name || userStore.user?.username }}</span>
           <button @click="handleLogout" class="logout-btn">Logout</button>
@@ -173,6 +180,10 @@ async function handleJoinRoom(room) {
   }
 }
 
+function goToSettings() {
+  router.push('/settings')
+}
+
 function handleLogout() {
   userStore.logout()
   router.push('/')
@@ -205,6 +216,30 @@ function handleLogout() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.user-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.settings-btn {
+  background: rgba(102, 126, 234, 0.1);
+  border: none;
+  color: #667eea;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-btn:hover {
+  background: rgba(102, 126, 234, 0.2);
+  transform: scale(1.05);
 }
 
 .user-info {
