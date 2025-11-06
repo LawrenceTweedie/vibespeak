@@ -253,13 +253,20 @@ class SignalingServer implements MessageComponentInterface
             return;
         }
 
-        $this->broadcastToRoom($roomId, [
+        $message = [
             'type' => 'chat',
             'userId' => $from->userId,
             'peerId' => $from->peerId,
             'message' => $data['message'] ?? '',
-            'timestamp' => time()
-        ], $from->resourceId);
+            'timestamp' => time() * 1000 // JavaScript uses milliseconds
+        ];
+
+        // Include image if present
+        if (!empty($data['image'])) {
+            $message['image'] = $data['image'];
+        }
+
+        $this->broadcastToRoom($roomId, $message, $from->resourceId);
     }
 
     private function broadcastToRoom($roomId, $message, $excludeResourceId = null)

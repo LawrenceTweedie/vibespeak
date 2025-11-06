@@ -120,8 +120,11 @@ class WebSocketService {
     this.send('media-state', { audio, video, screen })
   }
 
-  sendChat(message) {
-    this.send('chat', { message })
+  sendChat(data) {
+    this.send('chat', {
+      message: data.message,
+      image: data.image
+    })
   }
 
   disconnect() {
