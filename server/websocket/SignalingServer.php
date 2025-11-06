@@ -9,11 +9,21 @@ class SignalingServer implements MessageComponentInterface
 {
     protected $clients;
     protected $rooms;
+    protected $emptyRoomTimers;
+    protected $loop;
+    protected $db;
 
-    public function __construct()
+    public function __construct($loop = null)
     {
         $this->clients = new \SplObjectStorage;
         $this->rooms = [];
+        $this->emptyRoomTimers = [];
+        $this->loop = $loop;
+
+        // Initialize database connection
+        require_once __DIR__ . '/../api/Database.php';
+        $this->db = \VibeSpeak\Database::getInstance();
+
         echo "WebSocket server initialized\n";
     }
 
@@ -104,6 +114,15 @@ class SignalingServer implements MessageComponentInterface
             $this->rooms[$roomId] = [];
         }
 
+        // Cancel empty room timer if exists
+        if (isset($this->emptyRoomTimers[$roomId])) {
+            if ($this->loop) {
+                $this->loop->cancelTimer($this->emptyRoomTimers[$roomId]);
+            }
+            unset($this->emptyRoomTimers[$roomId]);
+            echo "Cancelled deletion timer for room {$roomId}\n";
+        }
+
         $this->rooms[$roomId][$conn->resourceId] = [
             'conn' => $conn,
             'userId' => $userId,
@@ -167,6 +186,9 @@ class SignalingServer implements MessageComponentInterface
             // Clean up empty rooms
             if (empty($this->rooms[$roomId])) {
                 unset($this->rooms[$roomId]);
+
+                // Start 3-minute timer to delete room from database
+                $this->scheduleRoomDeletion($roomId);
             }
 
             echo "Peer {$peerId} left room {$roomId}\n";
@@ -293,5 +315,55 @@ class SignalingServer implements MessageComponentInterface
             'type' => 'error',
             'message' => $message
         ]);
+    }
+
+    private function scheduleRoomDeletion($roomId)
+    {
+        if (!$this->loop) {
+            echo "Warning: Event loop not available, cannot schedule room deletion\n";
+            return;
+        }
+
+        // Cancel existing timer if any
+        if (isset($this->emptyRoomTimers[$roomId])) {
+            $this->loop->cancelTimer($this->emptyRoomTimers[$roomId]);
+        }
+
+        // Schedule deletion in 3 minutes (180 seconds)
+        $timer = $this->loop->addTimer(180, function() use ($roomId) {
+            $this->deleteRoomFromDatabase($roomId);
+            unset($this->emptyRoomTimers[$roomId]);
+        });
+
+        $this->emptyRoomTimers[$roomId] = $timer;
+        echo "Scheduled deletion for empty room {$roomId} in 3 minutes\n";
+    }
+
+    private function deleteRoomFromDatabase($roomId)
+    {
+        try {
+            // Check if room is still empty in WebSocket
+            if (isset($this->rooms[$roomId]) && !empty($this->rooms[$roomId])) {
+                echo "Room {$roomId} is no longer empty, skipping deletion\n";
+                return;
+            }
+
+            // Check if room has any participants in database
+            $participants = $this->db->fetchOne(
+                "SELECT COUNT(*) as count FROM room_participants WHERE room_id = ?",
+                [$roomId]
+            );
+
+            if ($participants && $participants['count'] > 0) {
+                echo "Room {$roomId} has participants in database, skipping deletion\n";
+                return;
+            }
+
+            // Delete the room
+            $this->db->execute("DELETE FROM rooms WHERE id = ?", [$roomId]);
+            echo "Deleted empty room {$roomId} from database\n";
+        } catch (\Exception $e) {
+            echo "Error deleting room {$roomId}: {$e->getMessage()}\n";
+        }
     }
 }

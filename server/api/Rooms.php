@@ -139,6 +139,9 @@ class Rooms
         // Add participant
         $this->addParticipant($roomId, $userId);
 
+        // Update last activity
+        $this->updateLastActivity($roomId);
+
         $updatedRoom = $this->getById($roomId);
         Response::success($updatedRoom, 'Joined room successfully');
     }
@@ -150,7 +153,24 @@ class Rooms
             [$roomId, $userId]
         );
 
+        // Update last activity
+        $this->updateLastActivity($roomId);
+
         Response::success([], 'Left room successfully');
+    }
+
+    public function delete($roomId)
+    {
+        $this->db->execute("DELETE FROM rooms WHERE id = ?", [$roomId]);
+        return true;
+    }
+
+    public function updateLastActivity($roomId)
+    {
+        $this->db->execute(
+            "UPDATE rooms SET last_activity = CURRENT_TIMESTAMP WHERE id = ?",
+            [$roomId]
+        );
     }
 
     public function updateMediaState($roomId, $userId, $data)

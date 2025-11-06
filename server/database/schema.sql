@@ -29,11 +29,13 @@ CREATE TABLE IF NOT EXISTS rooms (
     max_participants INT DEFAULT 10,
     is_public BOOLEAN DEFAULT FALSE,
     password_hash VARCHAR(255),
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_room_code (room_code),
-    INDEX idx_owner (owner_id)
+    INDEX idx_owner (owner_id),
+    INDEX idx_last_activity (last_activity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Room participants table
